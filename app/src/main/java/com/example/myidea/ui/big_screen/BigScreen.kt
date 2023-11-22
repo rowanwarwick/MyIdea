@@ -1,4 +1,4 @@
-package com.example.swgrind.ui.big_screen
+package com.example.myidea.ui.big_screen
 
 import android.content.Intent
 import android.net.Uri
@@ -7,8 +7,8 @@ import android.provider.Settings
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.example.swgrind.databinding.BigScreenBinding
-import com.example.swgrind.ui.floating_window.FloatingWindow
+import com.example.myidea.databinding.BigScreenBinding
+import com.example.myidea.ui.floating_window.FloatingWindow
 
 internal class BigScreen : AppCompatActivity() {
 

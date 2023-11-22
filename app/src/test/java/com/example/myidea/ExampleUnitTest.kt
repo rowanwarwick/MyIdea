@@ -1,4 +1,4 @@
-package com.example.swgrind
+package com.example.myidea
 
 import org.junit.Test
 

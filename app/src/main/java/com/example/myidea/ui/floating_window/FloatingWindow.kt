@@ -1,4 +1,4 @@
-package com.example.swgrind.ui.floating_window
+package com.example.myidea.ui.floating_window
 
 import android.annotation.SuppressLint
 import android.app.Service
@@ -10,9 +10,9 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.WindowManager
-import com.example.swgrind.ui.big_screen.BigScreen
-import com.example.swgrind.ui.capture_screen.CaptureScreen
-import com.example.swgrind.databinding.FloatingWindowBinding
+import com.example.myidea.ui.big_screen.BigScreen
+import com.example.myidea.ui.capture_screen.CaptureScreen
+import com.example.myidea.databinding.FloatingWindowBinding
 
 internal class FloatingWindow : Service() {
 

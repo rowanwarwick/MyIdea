@@ -1,4 +1,4 @@
-package com.example.swgrind.ui.common
+package com.example.myidea.ui.common
 
 import android.annotation.SuppressLint
 import android.content.Context

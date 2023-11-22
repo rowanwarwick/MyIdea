@@ -1,4 +1,4 @@
-package com.example.swgrind.ui.floating_window
+package com.example.myidea.ui.floating_window
 
 import android.view.MotionEvent
 import android.view.WindowManager

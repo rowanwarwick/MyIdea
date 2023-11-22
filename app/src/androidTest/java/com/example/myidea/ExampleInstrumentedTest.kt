@@ -1,4 +1,4 @@
-package com.example.swgrind
+package com.example.myidea
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

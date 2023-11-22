@@ -1,4 +1,4 @@
-package com.example.swgrind.ui.capture_screen
+package com.example.myidea.ui.capture_screen
 
 import android.app.Service
 import android.content.Context
@@ -7,7 +7,7 @@ import android.graphics.PixelFormat
 import android.os.IBinder
 import android.view.Gravity
 import android.view.WindowManager
-import com.example.swgrind.ui.common.CaptureView
+import com.example.myidea.ui.common.CaptureView
 
 internal class CaptureScreen: Service() {
 
