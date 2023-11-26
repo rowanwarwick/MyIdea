@@ -25,11 +25,20 @@
         </activity>
 
         <service
-            android:name=".ui.floating_window.FloatingWindow">
+            android:name=".ui.floating_window.FloatingWindow"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:label="@string/accessibility_service_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
         </service>
 
         <service
-            android:name=".ui.capture_screen.CaptureScreen">
+            android:name=".ui.capture_screen_service.CaptureScreenService">
         </service>
 
     </application>

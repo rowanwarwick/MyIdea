@@ -1,4 +1,4 @@
-package com.example.myidea.ui.capture_screen
+package com.example.myidea.ui.capture_screen_service
 
 import android.app.Service
 import android.content.Context
@@ -9,7 +9,7 @@ import android.view.Gravity
 import android.view.WindowManager
 import com.example.myidea.ui.common.CaptureView
 
-internal class CaptureScreen: Service() {
+internal class CaptureScreenService: Service() {
 
     private lateinit var windowManager: WindowManager
     private var captureView: CaptureView? = null

@@ -7,6 +7,11 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.view.MotionEvent
 import android.view.View
+import com.example.myidea.ui.event_bus.EventBus
+import com.example.myidea.ui.model.CaptureCoordinate
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 internal class CaptureView(context: Context, val invokeActionUp: () -> Unit = {}): View(context) {
 
@@ -33,6 +38,9 @@ internal class CaptureView(context: Context, val invokeActionUp: () -> Unit = {}
                 invalidate()
             }
             MotionEvent.ACTION_UP -> {
+                CoroutineScope(Dispatchers.Default).launch {
+                    EventBus.sendCoordinateChannel(CaptureCoordinate(startX, startY, endX, endY))
+                }
                 invokeActionUp()
             }
         }

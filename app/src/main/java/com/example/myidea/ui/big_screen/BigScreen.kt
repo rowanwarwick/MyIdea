@@ -20,6 +20,7 @@ internal class BigScreen : AppCompatActivity() {
         setContentView(binding.root)
         resultRequestPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
         binding.button.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             if (canDrawOverlays()) {
                 startService(Intent(this@BigScreen, FloatingWindow::class.java))
                 finish()

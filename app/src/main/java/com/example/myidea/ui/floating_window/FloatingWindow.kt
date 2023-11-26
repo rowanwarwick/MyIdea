@@ -1,70 +1,144 @@
 package com.example.myidea.ui.floating_window
 
+import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.app.Service
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
-import android.os.IBinder
+import android.util.Log
+import android.view.Display
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.WindowManager
-import com.example.myidea.ui.big_screen.BigScreen
-import com.example.myidea.ui.capture_screen.CaptureScreen
+import android.view.accessibility.AccessibilityEvent
 import com.example.myidea.databinding.FloatingWindowBinding
+import com.example.myidea.ui.big_screen.BigScreen
+import com.example.myidea.ui.capture_screen_service.CaptureScreenService
+import com.example.myidea.ui.event_bus.EventBus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
-internal class FloatingWindow : Service() {
+internal class FloatingWindow : AccessibilityService() {
 
     companion object {
         const val KOEF_SIZE = 0.55f
     }
 
-    private lateinit var binding: FloatingWindowBinding
+    private lateinit var floatingWindowBinding: FloatingWindowBinding
     private lateinit var windowManager: WindowManager
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
+    override fun onInterrupt() = Unit
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        binding = FloatingWindowBinding.inflate(inflater)
+        floatingWindowBinding = FloatingWindowBinding.inflate(inflater)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         val (width, height) = loadSizeScreen()
         val layoutParams = createLayoutParams(width, height)
-        windowManager.addView(binding.root, layoutParams)
-        binding.test.setOnClickListener {
-            stopSelf()
+        windowManager.addView(floatingWindowBinding.root, layoutParams)
+        floatingWindowBinding.test.setOnClickListener {
+            disableSelf()
             startActivity(
                 Intent(this, BigScreen::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             )
         }
-        binding.bStartCapture.setOnClickListener {
-            startService(Intent(this, CaptureScreen::class.java))
+        floatingWindowBinding.bStartCapture.setOnClickListener {
+            startService(Intent(this, CaptureScreenService::class.java))
         }
-        binding.bStopCapture.setOnClickListener {
+        floatingWindowBinding.bStopCapture.setOnClickListener {
+            takeScreenshot(Display.DEFAULT_DISPLAY, applicationContext.mainExecutor, object : TakeScreenshotCallback {
+                override fun onSuccess(screenshot: ScreenshotResult) {
+                    Log.i("TAG", "success")
+                    val bitmap = Bitmap.wrapHardwareBuffer(
+                        screenshot.hardwareBuffer,
+                        screenshot.colorSpace
+                    )
+                    floatingWindowBinding.test.setImageBitmap(bitmap)
+                }
 
+                override fun onFailure(errorCode: Int) {
+                    Log.i("TAG", "error")
+                }
+
+            })
         }
-        binding.root.setOnTouchListener { _, event ->
+        floatingWindowBinding.root.setOnTouchListener { _, event ->
             when (event?.action) {
-                MotionEvent.ACTION_DOWN -> EventCoordinate.actionDown(layoutParams, event)
+                MotionEvent.ACTION_DOWN -> MoveFloatWindow.actionDown(layoutParams, event)
                 MotionEvent.ACTION_MOVE -> {
                     windowManager.updateViewLayout(
-                        binding.root,
-                        EventCoordinate.actionMove(layoutParams, event, width, height)
+                        floatingWindowBinding.root,
+                        MoveFloatWindow.actionMove(layoutParams, event, width, height)
                     )
                 }
             }
             false
         }
+        CoroutineScope(Dispatchers.Default).launch {
+            EventBus.listenCoordinateChannel().collect {
+                Log.e("TAG", it.toString())
+            }
+        }
 
     }
 
+
+
+    private fun getScreenshot() {
+
+//        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+//        val canvas = Canvas(bitmap)
+//        viewScreenBinding.root.draw(canvas)
+//        return bitmap
+//        mediaProjectionManager.getMediaProjection(RESULT_OK, Intent())
+//        mediaProjection.createVirtualDisplay(
+//            "ScreenCapture",
+//            imageReader.width,
+//            imageReader.height,
+//            resources.displayMetrics.densityDpi,
+//            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+//            imageReader.surface,
+//            null,
+//            null
+//        )
+//        imageReader.setOnImageAvailableListener({ reader ->
+//            val image: Image? = reader?.acquireLatestImage()
+//            if (image != null) {
+//                processImage(image)
+//                image.close()
+//            }
+//        }, Handler(Looper.getMainLooper()))
+
+    }
+
+//    private fun processImage(image: Image) {
+//        val planes: Array<Image.Plane> = image.planes
+//        val buffer: ByteBuffer = planes[0].buffer
+//        val pixelStride: Int = planes[0].pixelStride
+//        val rowStride: Int = planes[0].rowStride
+//        val rowPadding = rowStride - pixelStride * image.width
+//
+//        // Create Bitmap
+//        val bitmap = Bitmap.createBitmap(
+//            image.width + rowPadding / pixelStride,
+//            image.height,
+//            Bitmap.Config.ARGB_8888
+//        )
+//        bitmap.copyPixelsFromBuffer(buffer)
+//        Log.e("TAG", "ok")
+//    }
+
     override fun onDestroy() {
         super.onDestroy()
-        windowManager.removeView(binding.root)
+        windowManager.removeView(floatingWindowBinding.root)
     }
 
     private fun loadSizeScreen(): Pair<Int, Int> =

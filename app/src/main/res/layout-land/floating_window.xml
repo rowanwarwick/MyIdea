@@ -8,11 +8,12 @@
     android:background="@color/white"
     tools:ignore="MissingDefaultResource">
 
-    <TextView
+    <ImageView
+        android:contentDescription="@string/test"
         android:id="@+id/test"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="TextView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/android"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
