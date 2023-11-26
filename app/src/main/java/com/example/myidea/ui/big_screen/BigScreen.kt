@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.myidea.databinding.BigScreenBinding
 import com.example.myidea.ui.floating_window.FloatingWindow
+import com.example.myidea.ui.media_token.MediaToken
 
 internal class BigScreen : AppCompatActivity() {
 
@@ -20,9 +21,8 @@ internal class BigScreen : AppCompatActivity() {
         setContentView(binding.root)
         resultRequestPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
         binding.button.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             if (canDrawOverlays()) {
-                startService(Intent(this@BigScreen, FloatingWindow::class.java))
+                startActivity(Intent(this@BigScreen, MediaToken::class.java))
                 finish()
             } else {
                 requestPermission()
