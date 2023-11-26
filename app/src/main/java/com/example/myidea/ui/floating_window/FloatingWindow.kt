@@ -26,11 +26,11 @@ import com.example.myidea.databinding.FloatingWindowBinding
 import com.example.myidea.ui.big_screen.BigScreen
 import com.example.myidea.ui.capture_screen_service.CaptureScreenService
 import com.example.myidea.ui.event_bus.EventBus
+import com.example.myidea.ui.model.CaptureCoordinate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.nio.ByteBuffer
 
 internal class FloatingWindow : Service() {
 
@@ -45,29 +45,30 @@ internal class FloatingWindow : Service() {
     private var imageReader: ImageReader? = null
     private var mediaProjection: MediaProjection? = null
     private var isEnableCaptureScreen = false
-    private var layoutParams: LayoutParams? = null
+    private val mapCoordinate = mutableMapOf<String, CaptureCoordinate>()
+    private val sizeDisplay: Pair<Int, Int> by lazy {
+        applicationContext.resources.displayMetrics.let { it.widthPixels to it.heightPixels }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
-        val (width, height) =
-            applicationContext.resources.displayMetrics.let { it.widthPixels to it.heightPixels }
-        layoutParams = createLayoutParams(width, height)
+        val layoutParams = createLayoutParams()
         startForegroundNotification()
-        addFloatingWindow()
+        addFloatingWindow(layoutParams)
         floatingWindowBinding.test.setOnClickListener { openBigScreen() }
         floatingWindowBinding.bStartCapture.setOnClickListener { captureScreen() }
-
         floatingWindowBinding.root.setOnTouchListener { _, event ->
-            moveFloatingWindow(event, width, height)
+            moveFloatingWindow(event, layoutParams)
         }
         setListenCoordinate()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val mediaProjectionManager =
+            getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         intent?.let { token ->
             floatingWindowBinding.bStopCapture.setOnClickListener {
                 getScreenshot(mediaProjectionManager, token)
@@ -83,8 +84,9 @@ internal class FloatingWindow : Service() {
         mediaProjection?.stop()
     }
 
-    private fun createLayoutParams(width: Int, height: Int): LayoutParams =
-        LayoutParams(
+    private fun createLayoutParams(): LayoutParams {
+        val (width, height) = sizeDisplay
+        return LayoutParams(
             (KOEF_SIZE * width).toInt(),
             (KOEF_SIZE * height).toInt(),
             LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -95,6 +97,7 @@ internal class FloatingWindow : Service() {
                 it.gravity = Gravity.START or Gravity.TOP
                 it.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             }
+    }
 
     private fun startForegroundNotification() {
 //        val service = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -112,7 +115,7 @@ internal class FloatingWindow : Service() {
         startForeground(ID_CHANNEL, notification)
     }
 
-    private fun addFloatingWindow() {
+    private fun addFloatingWindow(layoutParams: LayoutParams) {
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         floatingWindowBinding = FloatingWindowBinding.inflate(inflater)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -132,23 +135,22 @@ internal class FloatingWindow : Service() {
     }
 
     private fun getScreenshot(mediaProjectionManager: MediaProjectionManager, intent: Intent) {
-        layoutParams?.let {
-            if (isEnableCaptureScreen.not()) {
-                mediaProjection = mediaProjectionManager.getMediaProjection(Activity.RESULT_OK, intent)
-                startTakeScreenshot(it)
-            } else {
-                imageReader?.close()
-                mediaProjection?.stop()
-            }
-            isEnableCaptureScreen = isEnableCaptureScreen.not()
+        if (isEnableCaptureScreen.not()) {
+            mediaProjection = mediaProjectionManager.getMediaProjection(Activity.RESULT_OK, intent)
+            startTakeScreenshot()
+        } else {
+            imageReader?.close()
+            mediaProjection?.stop()
         }
+        isEnableCaptureScreen = isEnableCaptureScreen.not()
     }
 
     @SuppressLint("WrongConstant")
-    private fun startTakeScreenshot(layoutParams: LayoutParams) {
+    private fun startTakeScreenshot() {
+        val (width, height) = sizeDisplay
         imageReader = ImageReader.newInstance(
-            layoutParams.width,
-            layoutParams.height,
+            width,
+            height,
             PixelFormat.RGBA_8888,
             1
         )
@@ -172,33 +174,27 @@ internal class FloatingWindow : Service() {
     }
 
     private fun processImage(image: Image) {
-        val planes: Array<Image.Plane> = image.planes
-        val buffer: ByteBuffer = planes[0].buffer
-        val pixelStride: Int = planes[0].pixelStride
-        val rowStride: Int = planes[0].rowStride
-        val rowPadding = rowStride - pixelStride * image.width
-        val bitmap = Bitmap.createBitmap(
-            image.width + rowPadding / pixelStride,
-            image.height,
-            Bitmap.Config.ARGB_8888
-        )
+        val defaultCoordinate = CaptureCoordinate(0, 0, 1, 1)
+        val coordinate = mapCoordinate.getOrDefault("first", defaultCoordinate)
+        val planes = image.planes
+        val buffer = planes[0].buffer
+        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
         bitmap.copyPixelsFromBuffer(buffer)
-        floatingWindowBinding.test.setImageBitmap(bitmap)
+        val ex = Bitmap.createBitmap(bitmap, coordinate.startX, coordinate.startY, coordinate.width, coordinate.height)
+        floatingWindowBinding.test.setImageBitmap(ex)
     }
 
     private fun moveFloatingWindow(
         event: MotionEvent,
-        width: Int,
-        height: Int
+        layoutParams: LayoutParams
     ): Boolean {
+        val (width, height) = sizeDisplay
         when (event.action) {
-            MotionEvent.ACTION_DOWN -> layoutParams?.let { MoveFloatWindow.actionDown(it, event) }
-            MotionEvent.ACTION_MOVE -> layoutParams?.let {
-                windowManager?.updateViewLayout(
-                    floatingWindowBinding.root,
-                    MoveFloatWindow.actionMove(it, event, width, height)
-                )
-            }
+            MotionEvent.ACTION_DOWN -> MoveFloatWindow.actionDown(layoutParams, event)
+            MotionEvent.ACTION_MOVE -> windowManager?.updateViewLayout(
+                floatingWindowBinding.root,
+                MoveFloatWindow.actionMove(layoutParams, event, width, height)
+            )
         }
         return false
     }
@@ -206,7 +202,7 @@ internal class FloatingWindow : Service() {
     private fun setListenCoordinate() {
         CoroutineScope(Dispatchers.Default).launch {
             EventBus.listenCoordinateChannel().collect {
-                Log.e("TAG", it.toString())
+                mapCoordinate["first"] = it
             }
         }
     }

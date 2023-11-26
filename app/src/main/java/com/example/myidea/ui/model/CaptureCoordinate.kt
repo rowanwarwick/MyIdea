@@ -1,10 +1,10 @@
 package com.example.myidea.ui.model
 
 internal data class CaptureCoordinate(
-    val startX: Float,
-    val startY: Float,
-    val endX: Float,
-    val endY: Float,
+    val startX: Int,
+    val startY: Int,
+    val width: Int,
+    val height: Int,
 ) {
-    override fun toString() = "startX: $startX, endX: $endX, startY: $startY, endY: $endY"
+    override fun toString() = "startX: $startX, startY: $startY, width: $width, height: $height"
 }

@@ -39,7 +39,13 @@ internal class CaptureView(context: Context, val invokeActionUp: () -> Unit = {}
             }
             MotionEvent.ACTION_UP -> {
                 CoroutineScope(Dispatchers.Default).launch {
-                    EventBus.sendCoordinateChannel(CaptureCoordinate(startX, startY, endX, endY))
+                    val slot = CaptureCoordinate(
+                        startX.toInt(),
+                        startY.toInt(),
+                        endX.toInt() - startX.toInt(),
+                        endY.toInt() - startY.toInt(),
+                    )
+                    EventBus.sendCoordinateChannel(slot)
                 }
                 invokeActionUp()
             }
