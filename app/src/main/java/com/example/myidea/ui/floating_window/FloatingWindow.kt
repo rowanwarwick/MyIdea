@@ -15,7 +15,6 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -36,9 +35,17 @@ internal class FloatingWindow : Service() {
 
     companion object {
         const val KOEF_SIZE = 0.55f
-        const val ID_NOTIFICATION = "foreground_service_channel"
-        const val ID_CHANNEL = 1
+        const val PARAMETER = "parameter"
+        const val CHAR = "characteristics"
+        const val PREFIX = "prefix"
+        const val ONE = "one"
+        const val TWO = "two"
+        const val THREE = "three"
+        const val FOUR = "four"
     }
+
+    private val ID_NOTIFICATION = "foreground_service_channel"
+    private val ID_CHANNEL = 1
 
     private lateinit var floatingWindowBinding: FloatingWindowBinding
     private var windowManager: WindowManager? = null
@@ -58,10 +65,15 @@ internal class FloatingWindow : Service() {
         val layoutParams = createLayoutParams()
         startForegroundNotification()
         addFloatingWindow(layoutParams)
-        floatingWindowBinding.test.setOnClickListener { openBigScreen() }
-        floatingWindowBinding.bStartCapture.setOnClickListener { captureScreen() }
-        floatingWindowBinding.root.setOnTouchListener { _, event ->
-            moveFloatingWindow(event, layoutParams)
+        with(floatingWindowBinding) {
+            bReturn.setOnClickListener { openBigScreen() }
+            bCharField.setOnClickListener { captureScreen(CHAR) }
+            bPrefixField.setOnClickListener { captureScreen(PREFIX) }
+            bFirstField.setOnClickListener { captureScreen(ONE) }
+            bSecondField.setOnClickListener { captureScreen(TWO) }
+            bThirdField.setOnClickListener { captureScreen(THREE) }
+            bFourField.setOnClickListener { captureScreen(FOUR) }
+            root.setOnTouchListener { _, event -> moveFloatingWindow(event, layoutParams) }
         }
         setListenCoordinate()
     }
@@ -70,8 +82,13 @@ internal class FloatingWindow : Service() {
         val mediaProjectionManager =
             getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         intent?.let { token ->
-            floatingWindowBinding.bStopCapture.setOnClickListener {
-                getScreenshot(mediaProjectionManager, token)
+            with(floatingWindowBinding) {
+                ivCharField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
+                ivPrefixField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
+                ivFirstField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
+                ivSecondField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
+                ivThirdField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
+                ivFourField.setOnClickListener { getScreenshot(mediaProjectionManager, token) }
             }
         }
         return START_STICKY
@@ -130,8 +147,11 @@ internal class FloatingWindow : Service() {
         )
     }
 
-    private fun captureScreen() {
-        startService(Intent(this, CaptureScreenService::class.java))
+    private fun captureScreen(parameter: String) {
+        val intent = Intent(this, CaptureScreenService::class.java).also {
+            it.putExtra(PARAMETER, parameter)
+        }
+        startService(intent)
     }
 
     private fun getScreenshot(mediaProjectionManager: MediaProjectionManager, intent: Intent) {
@@ -174,14 +194,22 @@ internal class FloatingWindow : Service() {
     }
 
     private fun processImage(image: Image) {
-        val defaultCoordinate = CaptureCoordinate(0, 0, 1, 1)
-        val coordinate = mapCoordinate.getOrDefault("first", defaultCoordinate)
         val planes = image.planes
         val buffer = planes[0].buffer
         val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
         bitmap.copyPixelsFromBuffer(buffer)
-        val ex = Bitmap.createBitmap(bitmap, coordinate.startX, coordinate.startY, coordinate.width, coordinate.height)
-        floatingWindowBinding.test.setImageBitmap(ex)
+        for (entity in mapCoordinate) {
+            val (parameter, coordinate) = entity
+            val zone = Bitmap.createBitmap(bitmap, coordinate.startX, coordinate.startY, coordinate.width, coordinate.height)
+            when (parameter) {
+                CHAR -> floatingWindowBinding.ivCharField.setImageBitmap(zone)
+                PREFIX -> floatingWindowBinding.ivPrefixField.setImageBitmap(zone)
+                ONE -> floatingWindowBinding.ivFirstField.setImageBitmap(zone)
+                TWO -> floatingWindowBinding.ivSecondField.setImageBitmap(zone)
+                THREE -> floatingWindowBinding.ivThirdField.setImageBitmap(zone)
+                FOUR -> floatingWindowBinding.ivFourField.setImageBitmap(zone)
+            }
+        }
     }
 
     private fun moveFloatingWindow(
@@ -190,10 +218,10 @@ internal class FloatingWindow : Service() {
     ): Boolean {
         val (width, height) = sizeDisplay
         when (event.action) {
-            MotionEvent.ACTION_DOWN -> MoveFloatWindow.actionDown(layoutParams, event)
+            MotionEvent.ACTION_DOWN -> MoveWindowHandler.actionDown(layoutParams, event)
             MotionEvent.ACTION_MOVE -> windowManager?.updateViewLayout(
                 floatingWindowBinding.root,
-                MoveFloatWindow.actionMove(layoutParams, event, width, height)
+                MoveWindowHandler.actionMove(layoutParams, event, width, height)
             )
         }
         return false
@@ -202,7 +230,8 @@ internal class FloatingWindow : Service() {
     private fun setListenCoordinate() {
         CoroutineScope(Dispatchers.Default).launch {
             EventBus.listenCoordinateChannel().collect {
-                mapCoordinate["first"] = it
+                val (parameter, coordinate) = it
+                mapCoordinate[parameter] = coordinate
             }
         }
     }

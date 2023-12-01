@@ -3,7 +3,7 @@ package com.example.myidea.ui.floating_window
 import android.view.MotionEvent
 import android.view.WindowManager.LayoutParams
 
-internal object MoveFloatWindow {
+internal object MoveWindowHandler {
 
     private var x: Int = 0
     private var y: Int = 0

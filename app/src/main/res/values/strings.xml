@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">MyIdea</string>
-    <string name="test">test</string>
+    <string name="stub">заглушка</string>
+    <string name="first_field">Первое свойство: </string>
+    <string name="second_field">Второе свойство: </string>
+    <string name="third_field">Третье свойство: </string>
+    <string name="four_field">Четвертое свойство: </string>
+    <string name="prefix_field">Префикс: </string>
+    <string name="char_field">Характеристики руны: </string>
+    <string name="Cancel">Отмена</string>
+    <string name="take_area">Задать зону</string>
 </resources>

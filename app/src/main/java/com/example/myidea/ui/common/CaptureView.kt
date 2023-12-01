@@ -13,17 +13,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-internal class CaptureView(context: Context, val invokeActionUp: () -> Unit = {}): View(context) {
+internal class CaptureView(context: Context): View(context) {
 
-    private var startX = 0f
-    private var startY = 0f
-    private var endX = 0f
-    private var endY = 0f
     private val paint = Paint().apply {
         color = Color.GREEN
         strokeWidth = 5f
         style = Paint.Style.STROKE
     }
+
+    var startX = 0f
+    var startY = 0f
+    var endX = 0f
+    var endY = 0f
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -39,15 +40,8 @@ internal class CaptureView(context: Context, val invokeActionUp: () -> Unit = {}
             }
             MotionEvent.ACTION_UP -> {
                 CoroutineScope(Dispatchers.Default).launch {
-                    val slot = CaptureCoordinate(
-                        startX.toInt(),
-                        startY.toInt(),
-                        endX.toInt() - startX.toInt(),
-                        endY.toInt() - startY.toInt(),
-                    )
-                    EventBus.sendCoordinateChannel(slot)
+                    EventBus.sendStopDrawChannel()
                 }
-                invokeActionUp()
             }
         }
         return super.onTouchEvent(event)
